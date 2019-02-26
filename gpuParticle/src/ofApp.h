@@ -2,6 +2,8 @@
 
 #include "ofMain.h"
 #include "ofxGui.h"
+#include "ofxEasyFft.h"
+
 struct pingPongBuffer {
 public:
     void allocate( int _width, int _height, int _internalformat = GL_RGBA, int _numColorBuffers = 1) {
@@ -115,5 +117,11 @@ public:
     ofxToggle isAttract;
     
     float check;
+    float depth;
+    
+    ofxEasyFft fft;
+    float maxNum;
+    
+    
     
 };

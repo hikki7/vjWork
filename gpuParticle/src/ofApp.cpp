@@ -6,6 +6,9 @@ void ofApp::setup(){
     ofSetFullscreen(true);
     ofSetFrameRate(60);
     ofEnableBlendMode(OF_BLENDMODE_ADD);
+    ofBackground(0);
+
+    maxNum=1000000;
     
     // GUI
     gui.setup();
@@ -15,11 +18,14 @@ void ofApp::setup(){
     gui.add(centerX.set("centerX", ofGetWidth() / 2, 0, ofGetWidth()));
     gui.add(centerY.set("centerY", ofGetHeight() / 2, 0, ofGetHeight()));
     gui.add(centerZ.set("centerZ", ofGetWidth() / 2, 0, ofGetWidth()));
-    gui.add(numParticle.setup("numParticle",10000,0,500000));
+    gui.add(numParticle.setup("numParticle",100,0,maxNum));
     
     width =ofGetWidth();
     height = ofGetHeight();
     mouseFrag = false;
+    
+    
+
     
     // シェーダを読み込む
     updatePos.load("shaders/passthru.vert", "shaders/posUpdate.frag");
@@ -35,50 +41,16 @@ void ofApp::setup(){
         fftSmoothed[i] = 0;
     }
     
-    // テクスチャのサイズをnumParticleから計算して設定
-    textureRes = (int)sqrt((float)numParticle);
+    //fft setup
+    fft.setup(pow(2, 2));
     
-    int maxRes=(int)sqrt(500000);
+    int maxRes=ceil(sqrt(maxNum));
     
     // パーティクルの座標、速度、加速度の保存用FBO
     // RGB32Fの形式で3つのカラーバッファを用意
     posPingPong.allocate(maxRes, maxRes, GL_RGB32F, 3);
     
-    // パーティクルの位置の初期設定
-    pos.resize(numParticle*3);
-    for(int x = 0; x < textureRes; x++) {
-        for(int y = 0; y < textureRes; y++) {
-            int i = textureRes * y + x;
-            
-            pos[i*3 + 0] = ofRandom(1.0);
-            pos[i*3 + 1] = ofRandom(1.0);
-            pos[i*3 + 2] = ofRandom(1.0);
-        }
-    }
-    // pingPongBufferに初期値を書き込む
-    posPingPong.src->getTexture(0).loadData(pos.data(), textureRes, textureRes, GL_RGBA);
-    
-    // パーティクルの速度の初期設定
-    vel.resize(numParticle*3);
-    for(int i = 0; i < numParticle; i++) {
-        vel[i*3 + 0] = 0.0;
-        vel[i*3 + 1] = 0.0;
-        vel[i*3 + 2] = 0.0;
-    }
-    
-    // pingPongBufferに初期値を書き込む
-    posPingPong.src->getTexture(1).loadData(vel.data(), textureRes, textureRes, GL_RGBA);
-    
-    // パーティクルの加速度の初期設置
-    acc.resize(numParticle*3);
-    for(int i = 0; i < numParticle; i++) {
-        acc[i*3 + 0] = 0.0;
-        acc[i*3 + 1] = 0.0;
-        acc[i*3 + 2] = 0.0;
-    }
-    
-    // pingPongBufferに初期値を書き込む
-    posPingPong.src->getTexture(2).loadData(acc.data(), textureRes, textureRes, GL_RGBA);
+    resetPos();
     
     // renderFBOを初期化
     renderFBO.allocate(width, height, GL_RGB32F);
@@ -86,25 +58,23 @@ void ofApp::setup(){
     ofClear(0, 0, 0, 255);
     renderFBO.end();
     
-    // VBOMeshの初期設定
-    mesh.setMode(OF_PRIMITIVE_POINTS);
-    for(int x = 0; x < textureRes; x++) {
-        for(int y = 0; y < textureRes; y++) {
-            int i = y * textureRes + x;
-            mesh.addVertex(ofVec3f(x, y));
-            mesh.addTexCoord(ofVec2f(x, y));
-        }
-    }
     
     // 引力を発生する場所を中心に設定
     attractor = ofVec3f(ofGetWidth() / 2, ofGetHeight() / 2, 0);
     
     
     glPointSize(1.0);
+    cam.setTarget(ofVec3f(0,ofGetHeight()/2,0));
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
+    
+    fft.update();
+    vector<float> buffer;
+    buffer=fft.getBins();
+    //ofLog()<<buffer.size();
+    
     time += 0.01;
     
     ofSoundUpdate();
@@ -150,6 +120,11 @@ void ofApp::update(){
     if(check>98){
         resetPos();
     }
+    
+    
+    
+    
+
 }
 
 //--------------------------------------------------------------
@@ -157,8 +132,8 @@ void ofApp::draw(){
     ofEnableDepthTest();
     
     cam.begin();
-    
-    ofBackground(0);
+    depth=ofMap(fftSmoothed[3], 0, 1, 1500, 6000);
+    cam.setDistance(depth);
     
     updateRender.begin();
     updateRender.setUniformTexture("posTex", posPingPong.dst->getTexture(), 0);
@@ -180,31 +155,19 @@ void ofApp::draw(){
     ofDrawBitmapString("Fps: " + ofToString(ofGetFrameRate()), 15, 15);
     
     
-    for(int i = 0; i < nBandsToGet; i++) {
-        ofDrawBitmapString(ofToString(i) + "=" + ofToString(fftSmoothed[i]), 15, 200 + i*15);
-    }
-    
-    
     
 }
 
 //--------------------------------------------------------------
 void ofApp::resetPos(){
-    
-    
-    pos.resize(3*numParticle);
-    
-    vel.resize(3*numParticle);
-    
-    acc.resize(3*numParticle);
-    
      
-    textureRes = (int)sqrt((float)numParticle);
-
+    textureRes = ceil(sqrt(numParticle));
     
+    pos.resize(3*textureRes*textureRes);
     
-    cout<<numParticle<<endl;
+    vel.resize(3*textureRes*textureRes);
     
+    acc.resize(3*textureRes*textureRes);
     
     // パーティクルの速度の初期設定
     for(int i = 0; i < numParticle; i++) {
@@ -223,21 +186,20 @@ void ofApp::resetPos(){
     }
     
     // pingPongBufferに初期値を書き込む
-    posPingPong.src->getTexture(0).loadData(pos.data(), textureRes, textureRes, GL_RGBA);
+    posPingPong.src->getTexture(0).loadData(pos.data(), textureRes, textureRes, GL_RGB);
     
     // pingPongBufferに初期値を書き込む
-    posPingPong.src->getTexture(1).loadData(vel.data(), textureRes, textureRes, GL_RGBA);
+    posPingPong.src->getTexture(1).loadData(vel.data(), textureRes, textureRes, GL_RGB);
     
     // pingPongBufferに初期値を書き込む
-    posPingPong.src->getTexture(2).loadData(acc.data(), textureRes, textureRes, GL_RGBA);
+    posPingPong.src->getTexture(2).loadData(acc.data(), textureRes, textureRes, GL_RGB);
     
     // VBOMeshの初期設定
-    int res=(int)(sqrt(numParticle));
     mesh.clear();
     mesh.setMode(OF_PRIMITIVE_POINTS);
-    for(int x = 0; x < res; x++) {
-        for(int y = 0; y < res; y++) {
-            int i = y * res + x;
+    for(int x = 0; x < textureRes; x++) {
+        for(int y = 0; y < textureRes; y++) {
+            int i = y * textureRes + x;
             mesh.addVertex(ofVec3f(x, y));
             mesh.addTexCoord(ofVec2f(x, y));
         }
