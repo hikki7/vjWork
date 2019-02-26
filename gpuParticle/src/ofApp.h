@@ -68,6 +68,8 @@ public:
     void dragEvent(ofDragInfo dragInfo);
     void gotMessage(ofMessage msg);
     
+    void resetPos();
+    
     ofShader updatePos;
     ofShader updateRender;
     
@@ -81,8 +83,15 @@ public:
     bool mouseFrag; // is mouse dragged
     float time;
     int width, height;
-    int numParticle;
+    static const int numParticle=250000;
     int textureRes;
+    
+    
+    vector<float> pos;
+    vector<float> vel;
+    vector<float> acc;
+    
+
     
     // Attractor
     ofVec3f attractor;
@@ -103,5 +112,7 @@ public:
     ofParameter<float> centerY;
     ofParameter<float> centerZ;
     ofxToggle isAttract;
+    
+    float check;
     
 };

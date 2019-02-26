@@ -139,15 +139,38 @@ float snoise(vec4 v)
 
 vec3 checkEdges(vec3 p, vec3 v) {
     if(p.x < 0.0 || p.x > 1.0) {
-        v.x *= -1;
+        v.x *= -0.96;
     }
     if(p.y < 0.0 || p.y > 1.0) {
-        v.y *= -1;
+        v.y *= -0.96;
     }
     if(p.z < 0.0 || p.z > 1.0) {
-        v.z *= -1;
+        v.z *= -0.96;
     }
+    
     return v;
+}
+
+vec3 edgeWarp(vec3 p){
+    if(p.x>1.0){
+        p.x=1.0;
+    }else if(p.x<0.0){
+        p.x=0.0;
+    }
+    
+    if(p.y>1.0){
+        p.y=1.0;
+    }else if(p.y<0.0){
+        p.y=0.0;
+    }
+    
+    if(p.y>1.0){
+        p.y=1.0;
+    }else if(p.y<0.0){
+        p.y=0.0;
+    }
+    
+    return p;
 }
 
 void main() {
@@ -163,7 +186,7 @@ void main() {
     float limit = 0.005;
     if(dist < limit) dist = limit;//近すぎるとバグるから
 
-    float st = strength / (dist * dist); // attractive calc
+    float st = strength*0.5 / (dist * dist); // attractive calc
     dir *= st;
     if(isAttract) acc += dir; // attract
     else acc -= dir * 0.1;    // repulsion
@@ -183,6 +206,7 @@ void main() {
 
     // Update the Position
     pos += vel;
+    
 
     vFragColor0 = vec4(pos, 1.0);
     vFragColor1 = vec4(vel, 1.0);

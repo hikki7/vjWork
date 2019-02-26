@@ -4,7 +4,7 @@
 void ofApp::setup(){
     
     ofSetFullscreen(true);
-    numParticle = 512 * 512; // パーティクルの数
+    //numParticle = 512 * 512; // パーティクルの数
     ofSetFrameRate(60);
     ofEnableBlendMode(OF_BLENDMODE_ADD);
     
@@ -28,14 +28,15 @@ void ofApp::setup(){
     
     // テクスチャのサイズをnumParticleから計算して設定
     textureRes = (int)sqrt((float)numParticle);
-    numParticle = textureRes * textureRes;
+    //numParticle = textureRes * textureRes;
     
     // パーティクルの座標、速度、加速度の保存用FBO
     // RGB32Fの形式で3つのカラーバッファを用意
     posPingPong.allocate(textureRes, textureRes, GL_RGB32F, 3);
     
     // パーティクルの位置の初期設定
-    vector<float> pos(numParticle*3);
+    //vector<float> pos(numParticle*3);
+    pos.resize(numParticle*3);
     for(int x = 0; x < textureRes; x++) {
         for(int y = 0; y < textureRes; y++) {
             int i = textureRes * y + x;
@@ -49,7 +50,8 @@ void ofApp::setup(){
     posPingPong.src->getTexture(0).loadData(pos.data(), textureRes, textureRes, GL_RGBA);
     
     // パーティクルの速度の初期設定
-    vector<float> vel(numParticle*3);
+    //vector<float> vel(numParticle*3);
+    vel.resize(numParticle*3);
     for(int i = 0; i < numParticle; i++) {
         vel[i*3 + 0] = 0.0;
         vel[i*3 + 1] = 0.0;
@@ -60,7 +62,8 @@ void ofApp::setup(){
     posPingPong.src->getTexture(1).loadData(vel.data(), textureRes, textureRes, GL_RGBA);
     
     // パーティクルの加速度の初期設置
-    vector<float> acc(numParticle*3);
+    //vector<float> acc(numParticle*3);
+    acc.resize(numParticle*3);
     for(int i = 0; i < numParticle; i++) {
         acc[i*3 + 0] = 0.0;
         acc[i*3 + 1] = 0.0;
@@ -142,6 +145,12 @@ void ofApp::update(){
     
     // srcとdstを入れ替え
     posPingPong.swap();
+    
+    //たまにリセットかけたいよ〜
+    check=ofRandom(100);
+    if(check>98){
+        resetPos();
+    }
 }
 
 //--------------------------------------------------------------
@@ -175,11 +184,52 @@ void ofApp::draw(){
         ofDrawBitmapString(ofToString(i) + "=" + ofToString(fftSmoothed[i]), 15, 200 + i*15);
     }
      */
+    
+    ofSetColor(255);
+    ofDrawBitmapString(ofToString(check), 10, 10);
+    
+}
+
+//--------------------------------------------------------------
+void ofApp::resetPos(){
+    // パーティクルの位置の初期設定
+    for(int x = 0; x < textureRes; x++) {
+        for(int y = 0; y < textureRes; y++) {
+            int i = textureRes * y + x;
+            
+            pos[i*3 + 0] = ofRandom(1.0);
+            pos[i*3 + 1] = ofRandom(1.0);
+            pos[i*3 + 2] = ofRandom(1.0);
+        }
+    }
+    // pingPongBufferに初期値を書き込む
+    posPingPong.src->getTexture(0).loadData(pos.data(), textureRes, textureRes, GL_RGBA);
+    
+    // パーティクルの速度の初期設定
+    for(int i = 0; i < numParticle; i++) {
+        vel[i*3 + 0] = 0.0;
+        vel[i*3 + 1] = 0.0;
+        vel[i*3 + 2] = 0.0;
+    }
+    
+    // pingPongBufferに初期値を書き込む
+    posPingPong.src->getTexture(1).loadData(vel.data(), textureRes, textureRes, GL_RGBA);
+    
+    // パーティクルの加速度の初期設置
+    for(int i = 0; i < numParticle; i++) {
+        acc[i*3 + 0] = 0.0;
+        acc[i*3 + 1] = 0.0;
+        acc[i*3 + 2] = 0.0;
+    }
+    
+    // pingPongBufferに初期値を書き込む
+    posPingPong.src->getTexture(2).loadData(acc.data(), textureRes, textureRes, GL_RGBA);
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
-    
+    resetPos();
 }
 
 //--------------------------------------------------------------
