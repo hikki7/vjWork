@@ -83,7 +83,7 @@ public:
     bool mouseFrag; // is mouse dragged
     float time;
     int width, height;
-    static const int numParticle=250000;
+    //int numParticle=250000;
     int textureRes;
     
     
@@ -111,6 +111,7 @@ public:
     ofParameter<float> centerX;
     ofParameter<float> centerY;
     ofParameter<float> centerZ;
+    ofxFloatSlider numParticle;
     ofxToggle isAttract;
     
     float check;
