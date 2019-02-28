@@ -99,10 +99,10 @@ public:
     ofVec3f attractor;
     
     // Sound
-    float *fftSmoothed;
+    float *fftSmoothed1;
     float *volume;
     int nBandsToGet;
-    ofSoundPlayer sound;
+    ofSoundPlayer sound[3];
     
     // Mesh
     ofVboMesh mesh;
@@ -113,14 +113,23 @@ public:
     ofParameter<float> centerX;
     ofParameter<float> centerY;
     ofParameter<float> centerZ;
+    ofParameter<float> x;
+    ofParameter<float> y;
+    ofParameter<float> z;
     ofxFloatSlider numParticle;
     ofxToggle isAttract;
+    ofParameter<float> dx;
+    ofParameter<float> dy;
+    ofParameter<float> dz;
     
     float check;
     float depth;
     
     ofxEasyFft fft;
     float maxNum;
+    
+    float noiseX,noiseY,noiseZ;
+    
     
     
     

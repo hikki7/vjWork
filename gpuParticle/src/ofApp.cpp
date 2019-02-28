@@ -18,31 +18,38 @@ void ofApp::setup(){
     gui.add(centerX.set("centerX", ofGetWidth() / 2, 0, ofGetWidth()));
     gui.add(centerY.set("centerY", ofGetHeight() / 2, 0, ofGetHeight()));
     gui.add(centerZ.set("centerZ", ofGetWidth() / 2, 0, ofGetWidth()));
-    gui.add(numParticle.setup("numParticle",100,0,maxNum));
+    gui.add(numParticle.setup("popular",100,0,maxNum));
+    gui.add(x.set("x",0,-1000,1000));
+    gui.add(y.set("y",0,-2000,-500));
+    gui.add(z.set("z",0,-1000,1000));
+    gui.add(dx.set("dx",0,0,1.0));
+    gui.add(dy.set("dy",0,0,1.0));
+    gui.add(dz.set("dz",0,0,1.0));
     
     width =ofGetWidth();
     height = ofGetHeight();
     mouseFrag = false;
     
-    
-
+    noiseX=ofRandom(10000);
+    noiseY=ofRandom(10000);
+    noiseZ=ofRandom(10000);
     
     // シェーダを読み込む
     updatePos.load("shaders/passthru.vert", "shaders/posUpdate.frag");
     updateRender.load("shaders/render.vert", "shaders/render.frag");
     
     // 音声の設定
-    sound.load("digitalworld.MP3");
-    sound.setLoop(true);
-    sound.play();
-    nBandsToGet = 4;
-    fftSmoothed = new float[nBandsToGet];
+    sound[0].load("digitalworld.MP3");
+    sound[0].setLoop(true);
+    sound[0].play();
+    nBandsToGet = 6;
+    fftSmoothed1 = new float[nBandsToGet];
     for(int i = 0; i < nBandsToGet; i++) {
-        fftSmoothed[i] = 0;
+        fftSmoothed1[i] = 0;
     }
     
     //fft setup
-    fft.setup(pow(2, 2));
+    fft.setup(pow(2, 9));
     
     int maxRes=ceil(sqrt(maxNum));
     
@@ -65,6 +72,7 @@ void ofApp::setup(){
     
     glPointSize(1.0);
     cam.setTarget(ofVec3f(0,ofGetHeight()/2,0));
+ 
 }
 
 //--------------------------------------------------------------
@@ -73,7 +81,6 @@ void ofApp::update(){
     fft.update();
     vector<float> buffer;
     buffer=fft.getBins();
-    //ofLog()<<buffer.size();
     
     time += 0.01;
     
@@ -82,16 +89,16 @@ void ofApp::update(){
     
     // fftSmoothedに音声のデータ(配列)を格納
     for(int i = 0; i < nBandsToGet; i++) {
-        fftSmoothed[i] *= 0.96f;
-        if(fftSmoothed[i] < volume[i]) {
-            fftSmoothed[i] = volume[i];
+        fftSmoothed1[i] *= 0.96f;
+        if(fftSmoothed1[i] < volume[i]) {
+            fftSmoothed1[i] = volume[i];
         }
     }
     
     // attractorの位置(x, y, z)を音声から計算
-    centerX = ofMap(fftSmoothed[0], 0, 1, 0, ofGetWidth());
-    centerY = ofMap((fftSmoothed[1] - abs(sin(time) * 0.1)), 0, 1, ofGetHeight() * 0.50, ofGetHeight() * 0.75);
-    centerZ = ofMap(fftSmoothed[2], 0, 1, 0, ofGetWidth()) * 20.0;
+    centerX = ofMap(buffer[0], 0, 1, 0, ofGetWidth());
+    centerY = ofMap((buffer[1] - abs(sin(time) * 0.1)), 0, 1, ofGetHeight() * 0.50, ofGetHeight() * 0.75);
+    centerZ = ofMap(buffer[2], 0, 1, 0, ofGetWidth()) * 15.0;
     attractor = ofVec3f(centerX, centerY, centerZ);
     
     
@@ -116,15 +123,44 @@ void ofApp::update(){
     posPingPong.swap();
     
     //たまにリセットかけたいよ〜
-    check=ofRandom(100);
-    if(check>98){
+    if(buffer[7]>0.9){
         resetPos();
     }
-    
-    
-    
-    
 
+    //---------------------カメラの位置の移動
+    buffer[3]=(floor(100*buffer[3]))/100;
+    buffer[4]=(floor(100*buffer[4]))/100;
+    buffer[5]=(floor(100*buffer[5]))/100;
+    
+    noiseX=(floor(100*noiseX))/100;
+    noiseY=(floor(100*noiseY))/100;
+    noiseZ=(floor(100*noiseZ))/100;
+    
+    dx=ofMap(buffer[8], 0, 1, 0, 0.2);
+    dy=ofMap(buffer[9], 0, 1, 0, 0.2);
+    dz=ofMap(buffer[10], 0, 1, 0, 0.2);
+    
+    if(!isnan(buffer[3])){
+        noiseX+=(dx*buffer[3]);
+    }
+    
+    if(!isnan(buffer[4])){
+        noiseY+=(dy*buffer[4]);
+    }
+    
+    if(!isnan(buffer[5])){
+        noiseZ+=(dz*buffer[5]);
+    }
+   
+    
+    x=ofMap(ofNoise(noiseX), 0, 1, -500, 500);
+    y=ofMap(ofNoise(noiseY), 0, 1, -2000,-500);
+    z=ofMap(ofNoise(noiseZ), 0, 1, -1000, 1000);
+    
+    cam.setPosition(x, y, z);
+    
+    depth=ofMap(buffer[6], 0, 1, 1500, 6000);
+    
 }
 
 //--------------------------------------------------------------
@@ -132,7 +168,6 @@ void ofApp::draw(){
     ofEnableDepthTest();
     
     cam.begin();
-    depth=ofMap(fftSmoothed[3], 0, 1, 1500, 6000);
     cam.setDistance(depth);
     
     updateRender.begin();
@@ -164,9 +199,7 @@ void ofApp::resetPos(){
     textureRes = ceil(sqrt(numParticle));
     
     pos.resize(3*textureRes*textureRes);
-    
     vel.resize(3*textureRes*textureRes);
-    
     acc.resize(3*textureRes*textureRes);
     
     // パーティクルの速度の初期設定
@@ -208,7 +241,7 @@ void ofApp::resetPos(){
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
-    resetPos();
+    
 }
 
 //--------------------------------------------------------------
