@@ -1,9 +1,16 @@
 <?xml version="1.0"?>
 <group>
-	<strength>0.085</strength>
-	<Attract>1</Attract>
-	<centerX>283.719</centerX>
-	<centerY>460.917</centerY>
-	<centerZ>444.044</centerZ>
+	<strength>0.25</strength>
+	<Attract>0</Attract>
+	<centerX>2.26292</centerX>
+	<centerY>460.667</centerY>
+	<centerZ>7798.43</centerZ>
 	<numParticle>435000</numParticle>
+	<popular>590000</popular>
+	<x>-222.883</x>
+	<y>-1171.41</y>
+	<z>305.434</z>
+	<dx>0.0618747</dx>
+	<dy>0.0202546</dy>
+	<dz>0.0233886</dz>
 </group>

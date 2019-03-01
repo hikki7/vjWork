@@ -3,6 +3,9 @@
 #include "ofMain.h"
 #include "ofxGui.h"
 #include "ofxEasyFft.h"
+#include "ofxOsc.h"
+
+#define PORT 8000
 
 struct pingPongBuffer {
 public:
@@ -92,7 +95,7 @@ public:
     vector<float> pos;
     vector<float> vel;
     vector<float> acc;
-    
+        
 
     
     // Attractor
@@ -130,7 +133,8 @@ public:
     
     float noiseX,noiseY,noiseZ;
     
-    
+    ofxOscReceiver receiver;
+    int soundNum;
     
     
 };

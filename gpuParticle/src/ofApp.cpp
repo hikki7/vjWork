@@ -40,8 +40,8 @@ void ofApp::setup(){
     
     // 音声の設定
     sound[0].load("digitalworld.MP3");
-    sound[0].setLoop(true);
-    sound[0].play();
+    //sound[0].setLoop(true);
+    //sound[0].play();
     nBandsToGet = 6;
     fftSmoothed1 = new float[nBandsToGet];
     for(int i = 0; i < nBandsToGet; i++) {
@@ -72,11 +72,24 @@ void ofApp::setup(){
     
     glPointSize(1.0);
     cam.setTarget(ofVec3f(0,ofGetHeight()/2,0));
- 
+    
+    //osc portを解放
+    receiver.setup(PORT);
+    soundNum=9999;
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
+    
+    //----------------------oscの受信を常にする
+    while (receiver.hasWaitingMessages()) {
+        ofxOscMessage message;
+        receiver.getNextMessage(message);
+        if(message.getAddress()=="soundNum"){
+            soundNum=message.getArgAsInt(0);
+            ofLog()<<soundNum;
+        }
+    }
     
     fft.update();
     vector<float> buffer;
@@ -85,20 +98,13 @@ void ofApp::update(){
     time += 0.01;
     
     ofSoundUpdate();
-    volume = ofSoundGetSpectrum(nBandsToGet);
     
-    // fftSmoothedに音声のデータ(配列)を格納
-    for(int i = 0; i < nBandsToGet; i++) {
-        fftSmoothed1[i] *= 0.96f;
-        if(fftSmoothed1[i] < volume[i]) {
-            fftSmoothed1[i] = volume[i];
-        }
-    }
+    
     
     // attractorの位置(x, y, z)を音声から計算
     centerX = ofMap(buffer[0], 0, 1, 0, ofGetWidth());
-    centerY = ofMap((buffer[1] - abs(sin(time) * 0.1)), 0, 1, ofGetHeight() * 0.50, ofGetHeight() * 0.75);
-    centerZ = ofMap(buffer[2], 0, 1, 0, ofGetWidth()) * 15.0;
+    centerY = ofMap((buffer[5] - abs(sin(time) * 0.1)), 0, 1, ofGetHeight() * 0.50, ofGetHeight() * 0.75);
+    centerZ = ofMap(buffer[10], 0, 1, 0, ofGetWidth()) * 15.0;
     attractor = ofVec3f(centerX, centerY, centerZ);
     
     
@@ -123,43 +129,45 @@ void ofApp::update(){
     posPingPong.swap();
     
     //たまにリセットかけたいよ〜
-    if(buffer[7]>0.9){
+    if(buffer[27]>0.9){
         resetPos();
     }
 
     //---------------------カメラの位置の移動
-    buffer[3]=(floor(100*buffer[3]))/100;
-    buffer[4]=(floor(100*buffer[4]))/100;
-    buffer[5]=(floor(100*buffer[5]))/100;
+    buffer[15]=(floor(100*buffer[15]))/100;
+    buffer[20]=(floor(100*buffer[20]))/100;
+    buffer[25]=(floor(100*buffer[25]))/100;
     
     noiseX=(floor(100*noiseX))/100;
     noiseY=(floor(100*noiseY))/100;
     noiseZ=(floor(100*noiseZ))/100;
     
-    dx=ofMap(buffer[8], 0, 1, 0, 0.2);
-    dy=ofMap(buffer[9], 0, 1, 0, 0.2);
-    dz=ofMap(buffer[10], 0, 1, 0, 0.2);
+    dx=ofMap(buffer[40], 0, 1, 0, 0.2);
+    dy=ofMap(buffer[45], 0, 1, 0, 0.2);
+    dz=ofMap(buffer[50], 0, 1, 0, 0.2);
     
-    if(!isnan(buffer[3])){
-        noiseX+=(dx*buffer[3]);
+    if(!isnan(buffer[15])){
+        noiseX+=(dx*buffer[15]);
     }
     
-    if(!isnan(buffer[4])){
-        noiseY+=(dy*buffer[4]);
+    if(!isnan(buffer[20])){
+        noiseY+=(dy*buffer[20]);
     }
     
-    if(!isnan(buffer[5])){
-        noiseZ+=(dz*buffer[5]);
+    if(!isnan(buffer[25])){
+        noiseZ+=(dz*buffer[25]);
     }
-   
     
     x=ofMap(ofNoise(noiseX), 0, 1, -500, 500);
     y=ofMap(ofNoise(noiseY), 0, 1, -2000,-500);
     z=ofMap(ofNoise(noiseZ), 0, 1, -1000, 1000);
     
+    
     cam.setPosition(x, y, z);
     
-    depth=ofMap(buffer[6], 0, 1, 1500, 6000);
+    depth=ofMap(buffer[30], 0, 1, 1500, 6000);
+    
+    //ofLog()<<buffer[7];
     
 }
 
@@ -187,8 +195,7 @@ void ofApp::draw(){
     // デバッグ用
     gui.draw();
     ofSetColor(255);
-    ofDrawBitmapString("Fps: " + ofToString(ofGetFrameRate()), 15, 15);
-    
+    //ofDrawBitmapString("Fps: " + ofToString(ofGetFrameRate()), 15, 15);
     
     
 }
@@ -241,6 +248,7 @@ void ofApp::resetPos(){
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
+    resetPos();
     
 }
 
