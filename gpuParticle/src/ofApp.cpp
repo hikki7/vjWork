@@ -3,22 +3,26 @@
 //--------------------------------------------------------------
 void ofApp::setup(){
     
+    soundNum=3;
+    
     ofSetFullscreen(true);
     ofSetFrameRate(60);
     ofEnableBlendMode(OF_BLENDMODE_ADD);
     ofBackground(0);
+    //ofHideCursor();
 
-    maxNum=1000000;
+    maxNum=2000000;
+    
+    isAttract=false;
     
     // GUI
     gui.setup();
     gui.setPosition(20, 20);
     gui.add(strength.set("strength", 0.9, 0.0, 1.0));
-    gui.add(isAttract.setup("Attract", true));
     gui.add(centerX.set("centerX", ofGetWidth() / 2, 0, ofGetWidth()));
     gui.add(centerY.set("centerY", ofGetHeight() / 2, 0, ofGetHeight()));
     gui.add(centerZ.set("centerZ", ofGetWidth() / 2, 0, ofGetWidth()));
-    gui.add(numParticle.setup("popular",100,0,maxNum));
+    gui.add(numParticle.set("popular",0,0,maxNum));
     gui.add(x.set("x",0,-1000,1000));
     gui.add(y.set("y",0,-2000,-500));
     gui.add(z.set("z",0,-1000,1000));
@@ -37,16 +41,6 @@ void ofApp::setup(){
     // シェーダを読み込む
     updatePos.load("shaders/passthru.vert", "shaders/posUpdate.frag");
     updateRender.load("shaders/render.vert", "shaders/render.frag");
-    
-    // 音声の設定
-    sound[0].load("digitalworld.MP3");
-    //sound[0].setLoop(true);
-    //sound[0].play();
-    nBandsToGet = 6;
-    fftSmoothed1 = new float[nBandsToGet];
-    for(int i = 0; i < nBandsToGet; i++) {
-        fftSmoothed1[i] = 0;
-    }
     
     //fft setup
     fft.setup(pow(2, 9));
@@ -73,33 +67,31 @@ void ofApp::setup(){
     glPointSize(1.0);
     cam.setTarget(ofVec3f(0,ofGetHeight()/2,0));
     
-    //osc portを解放
-    receiver.setup(PORT);
-    soundNum=9999;
+    artist[0]="Nakata Yasutaka";
+    artist[1]="PERFUME";
+    artist[2]="Virtual Riot";
+    
+    song[0]="Give You More";
+    song[1]="If you wanna";
+    song[2]="Energy Drink";
+    
+    dance[0]= 0.651;
+    dance[1]= 0.571;
+    dance[2]= 0.817;
+    
+    popular[0]=134821;
+    popular[1]=205737;
+    popular[2]=663453;
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
-    
-    //----------------------oscの受信を常にする
-    while (receiver.hasWaitingMessages()) {
-        ofxOscMessage message;
-        receiver.getNextMessage(message);
-        if(message.getAddress()=="soundNum"){
-            soundNum=message.getArgAsInt(0);
-            ofLog()<<soundNum;
-        }
-    }
     
     fft.update();
     vector<float> buffer;
     buffer=fft.getBins();
     
     time += 0.01;
-    
-    ofSoundUpdate();
-    
-    
     
     // attractorの位置(x, y, z)を音声から計算
     centerX = ofMap(buffer[0], 0, 1, 0, ofGetWidth());
@@ -162,12 +154,13 @@ void ofApp::update(){
     y=ofMap(ofNoise(noiseY), 0, 1, -2000,-500);
     z=ofMap(ofNoise(noiseZ), 0, 1, -1000, 1000);
     
-    
     cam.setPosition(x, y, z);
     
     depth=ofMap(buffer[30], 0, 1, 1500, 6000);
     
-    //ofLog()<<buffer[7];
+    if(buffer[24]>0.9){
+        changeAttractor();
+    }
     
 }
 
@@ -193,11 +186,13 @@ void ofApp::draw(){
     ofDisableDepthTest();
     
     // デバッグ用
-    gui.draw();
-    ofSetColor(255);
+    //gui.draw();
+    //ofSetColor(255);
     //ofDrawBitmapString("Fps: " + ofToString(ofGetFrameRate()), 15, 15);
     
-    
+    if(infoSong.size()>0){
+        infoSong[0]->display();
+    }
 }
 
 //--------------------------------------------------------------
@@ -247,9 +242,28 @@ void ofApp::resetPos(){
 }
 
 //--------------------------------------------------------------
+void ofApp::changeAttractor(){
+    if(isAttract){
+        isAttract=false;
+    }else{
+        isAttract=true;
+    }
+}
+
+
+//--------------------------------------------------------------
 void ofApp::keyPressed(int key){
+    int num=key-49;
+    if(num>3){
+        resetPos();
+        return;
+    }
+    soundNum=num;
+    numParticle=popular[soundNum];
+    strength=dance[soundNum];
+    infoSong.clear();
+    infoSong.push_back(new informSong(artist[soundNum],song[soundNum],ofToString(popular[soundNum])));
     resetPos();
-    
 }
 
 //--------------------------------------------------------------

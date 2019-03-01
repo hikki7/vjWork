@@ -3,9 +3,8 @@
 #include "ofMain.h"
 #include "ofxGui.h"
 #include "ofxEasyFft.h"
-#include "ofxOsc.h"
+#include "informSong.hpp"
 
-#define PORT 8000
 
 struct pingPongBuffer {
 public:
@@ -74,6 +73,7 @@ public:
     void gotMessage(ofMessage msg);
     
     void resetPos();
+    void changeAttractor();
     
     ofShader updatePos;
     ofShader updateRender;
@@ -88,24 +88,14 @@ public:
     bool mouseFrag; // is mouse dragged
     float time;
     int width, height;
-    //int numParticle=250000;
     int textureRes;
-    
     
     vector<float> pos;
     vector<float> vel;
     vector<float> acc;
-        
-
     
     // Attractor
     ofVec3f attractor;
-    
-    // Sound
-    float *fftSmoothed1;
-    float *volume;
-    int nBandsToGet;
-    ofSoundPlayer sound[3];
     
     // Mesh
     ofVboMesh mesh;
@@ -119,8 +109,7 @@ public:
     ofParameter<float> x;
     ofParameter<float> y;
     ofParameter<float> z;
-    ofxFloatSlider numParticle;
-    ofxToggle isAttract;
+    ofParameter<float> numParticle;
     ofParameter<float> dx;
     ofParameter<float> dy;
     ofParameter<float> dz;
@@ -133,8 +122,15 @@ public:
     
     float noiseX,noiseY,noiseZ;
     
-    ofxOscReceiver receiver;
     int soundNum;
     
+    string artist[3];
+    string song[3];
+    float dance[3];
+    float popular[3];
+    
+    bool isAttract;
+    
+    vector<informSong*> infoSong;
     
 };
