@@ -4,6 +4,9 @@
 #include "ofxGui.h"
 #include "ofxEasyFft.h"
 #include "informSong.hpp"
+#include "ofxOsc.h"
+
+#define PORT 8000
 
 
 struct pingPongBuffer {
@@ -74,6 +77,7 @@ public:
     
     void resetPos();
     void changeAttractor();
+    void changeNum(int _num);
     
     ofShader updatePos;
     ofShader updateRender;
@@ -132,5 +136,7 @@ public:
     bool isAttract;
     
     vector<informSong*> infoSong;
+    
+    ofxOscReceiver receiver;
     
 };

@@ -82,10 +82,22 @@ void ofApp::setup(){
     popular[0]=134821;
     popular[1]=205737;
     popular[2]=663453;
+    
+    receiver.setup(PORT);
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
+    
+    while(receiver.hasWaitingMessages()){
+        ofxOscMessage m;
+        receiver.getNextMessage(m);
+        
+        if(m.getAddress()=="changeSound"){
+            changeNum(m.getArgAsInt(0));
+        }
+    }
+    
     
     fft.update();
     vector<float> buffer;
@@ -250,10 +262,9 @@ void ofApp::changeAttractor(){
     }
 }
 
-
 //--------------------------------------------------------------
-void ofApp::keyPressed(int key){
-    int num=key-49;
+void ofApp::changeNum(int _num){
+    int num=_num;
     if(num>3){
         resetPos();
         return;
@@ -264,6 +275,12 @@ void ofApp::keyPressed(int key){
     infoSong.clear();
     infoSong.push_back(new informSong(artist[soundNum],song[soundNum],ofToString(popular[soundNum])));
     resetPos();
+}
+
+//--------------------------------------------------------------
+void ofApp::keyPressed(int key){
+    int num=key-49;
+    changeNum(num);
 }
 
 //--------------------------------------------------------------
